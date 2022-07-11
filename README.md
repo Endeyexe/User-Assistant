@@ -1,2 +1,2 @@
 # User-Assistant
-A Discord bot that acts as your personal assistant. Performing tasks like managing messages and appointments you receive
+A Discord bot that acts as your personal assistant. This bot performs tasks like managing messages and appointments you receive
