@@ -6,7 +6,7 @@ from datetime import date, datetime
 from dateutil import parser #To parse
 import pytz #get the list of timezones
 
-plugin = lightbulb.Plugin("communication")
+plugin = lightbulb.Plugin("mail")
 
 def build_embed(page_index, page_content):
     return hikari.Embed(title=f"Your inbox:", description=page_content)
@@ -41,8 +41,7 @@ async def set_profile(userID):
 @lightbulb.implements(lightbulb.SlashCommand)
 async def mail(ctx):
     await set_profile(ctx.author.id)
-    with open("users.json", "r") as f:
-        users = json.load(f)
+    get_users_data()
     #Check if the username id exists in the users JSON
     if str(ctx.options.username.id) in users:
         #Check if the user has already been messaged by them
@@ -59,35 +58,6 @@ async def mail(ctx):
     else:
         await ctx.respond("**It appears the user you want to message doesn't have a profile setup. A profile can be setup by using bot commands.**")
 
-
-@plugin.command
-@lightbulb.option("reason", "Describe the reason in the least amount of words")
-@lightbulb.option("timezone", "The timezone on said time", autocomplete=True)
-@lightbulb.option("time", "time on said date using the 24-HOUR CLOCK")
-@lightbulb.option("day", "The day on said month", type=int, max_value=31)
-@lightbulb.option("month", "The month", choices=["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"])
-@lightbulb.option("username", "The user you want to book", type=hikari.User)
-@lightbulb.command("book", "Book an appointment with a user")
-@lightbulb.implements(lightbulb.SlashCommand)
-async def book(ctx):
-    co = ctx.options
-    SelectedDate = parser.parse(f"{co.month} {co.day} {date.today().year}")
-    if datetime.today() > SelectedDate:
-        await ctx.respond("The date you've entered is in the past.") 
-    else:
-        with open("users.json", "r") as f:
-            users = json.load(f)
-        strDate = f"{co.month} {co.day} {co.time} {co.timezone}"
-        users[str(co.username.id)]["booking_requests"].update({ctx.author.id:[strDate, co.reason]})
-        with open("users.json", "w") as f:
-            json.dump(users, f, indent=2)
-        await ctx.respond(f"Booking request scheduled on {strDate} ")
-
-
-@book.autocomplete("timezone")
-async def book_autocomplete(option, interaction):
-    return get_close_matches(option.value.capitalize(), pytz.common_timezones, 2, 0.4)
-    
 @plugin.command
 @lightbulb.command("inbox", "Commands specific to the inbox")
 @lightbulb.implements(lightbulb.SlashCommandGroup)
@@ -121,9 +91,9 @@ async def messages(ctx):
     else: await ctx.respond("**Your inbox is currently empty**")
 
 @inbox.child
-@lightbulb.command("appointments", "View of all messages you've received")
+@lightbulb.command("booking_requests", "View booking requests")
 @lightbulb.implements(lightbulb.SlashSubCommand)
-async def appointments(ctx):
+async def booking_requests(ctx):
     pass
 
 #make a sub sub command group for clear all, clear messages, clear appointments later
