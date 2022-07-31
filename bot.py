@@ -1,9 +1,7 @@
 import hikari, lightbulb
 import os
 from dotenv import load_dotenv
-from datetime import datetime
 
-datetime_object = datetime.strptime('Jun 1 2005  1:33PM', '%b %d %Y %I:%M%p')
 load_dotenv()
 
 bot = lightbulb.BotApp(os.getenv("TOKEN"), 
