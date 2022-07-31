@@ -64,12 +64,6 @@ async def profile(ctx):
     else:
         ctx.respond("**The profile does not seem to exist in our database**")
 
-@plugin.command
-@lightbulb.command("calander", "View upcoming appointments you have booked ")
-@lightbulb.implements(lightbulb.SlashCommand)
-async def calander(ctx):
-    pass
-    
 
 def load(bot):
     bot.add_plugin(plugin)
