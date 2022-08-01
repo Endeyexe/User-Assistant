@@ -1,4 +1,10 @@
 import hikari, lightbulb
+from utils import get_users_data, set_profile
+import json
+from difflib import get_close_matches
+from datetime import date, datetime
+from dateutil import parser #To parse
+import pytz #get the list of timezones
 
 plugin = lightbulb.Plugin("scheduling")
 
@@ -13,13 +19,13 @@ plugin = lightbulb.Plugin("scheduling")
 @lightbulb.command("book", "Book an appointment with a user")
 @lightbulb.implements(lightbulb.SlashCommand)
 async def book(ctx):
+    await set_profile(ctx.author.id)
     co = ctx.options
     SelectedDate = parser.parse(f"{co.month} {co.day} {date.today().year}")
     if datetime.today() > SelectedDate:
         await ctx.respond("The date you've entered is in the past.") 
     else:
-        with open("users.json", "r") as f:
-            users = json.load(f)
+        users = await get_users_data()
         strDate = f"{co.month} {co.day}, {co.time} {co.timezone}"
         users[str(co.username.id)]["booking_requests"].update({ctx.author.id:[strDate, co.reason]})
         with open("users.json", "w") as f:

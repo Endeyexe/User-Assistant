@@ -5,34 +5,12 @@ from difflib import get_close_matches
 from datetime import date, datetime
 from dateutil import parser #To parse
 import pytz #get the list of timezones
+from utils import get_users_data, set_profile
 
 plugin = lightbulb.Plugin("mail")
 
 def build_embed(page_index, page_content):
     return hikari.Embed(title=f"Your inbox:", description=page_content)
-
-async def get_users_data():
-    with open("users.json", "r") as f:
-        users = json.load(f)
-    
-async def set_profile(userID):
-    #make em a profile in the JSON if they don't got one already
-    with open("users.json", "r") as f:
-        users = json.load(f)
-    if str(userID) in users:
-        return False
-    else:
-        users[str(userID)] = {}
-        users[str(userID)]["description"] = "This profile has not been edited yet. This can be changed using `/settings profile_description`"
-        users[str(userID)]["messages"] = {}
-        users[str(userID)]["bookings"] = {}
-        users[str(userID)]["booking_requests"] = {}
-        users[str(userID)]["daily_updates"] = False
-
-    with open("users.json", "w") as f:
-        json.dump(users, f, indent=2)
-    f.close()
-    return True
 
 @plugin.command
 @lightbulb.option("username", "The end user's name", type=hikari.User)
@@ -41,7 +19,7 @@ async def set_profile(userID):
 @lightbulb.implements(lightbulb.SlashCommand)
 async def mail(ctx):
     await set_profile(ctx.author.id)
-    get_users_data()
+    users = await get_users_data()
     #Check if the username id exists in the users JSON
     if str(ctx.options.username.id) in users:
         #Check if the user has already been messaged by them
@@ -77,8 +55,8 @@ async def overview(ctx):
 async def messages(ctx):
     #add 2 buttons to view pages of messages and have another to view appointments
     await set_profile(ctx.author.id)
-    with open("users.json", "r") as f:
-        users = json.load(f)
+    users = await get_users_data()
+
     inbox = pag.EmbedPaginator()
     inbox.set_embed_factory(build_embed)
     if len(users[str(ctx.author.id)]["messages"].keys()): #if they have messages
@@ -101,8 +79,7 @@ async def booking_requests(ctx):
 @lightbulb.command("clear_messages", "Clears all messages in your inbox")
 @lightbulb.implements(lightbulb.SlashSubCommand)
 async def clear_messages(ctx):
-    with open("users.json", "r") as f:
-        users = json.load(f)
+    users = await get_users_data()
     count = len(users[str(ctx.author.id)]["messages"].values())
     users[str(ctx.author.id)]["messages"].clear()
     with open("users.json", "w") as f:
