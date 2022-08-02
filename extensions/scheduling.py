@@ -1,4 +1,5 @@
 import hikari, lightbulb
+from lightbulb.utils import pag, nav
 from utils import get_users_data, set_profile
 import json
 from difflib import get_close_matches
@@ -32,11 +33,25 @@ async def book(ctx):
             json.dump(users, f, indent=2)
         await ctx.respond(f"Booking request scheduled on {strDate} ")
 
+def build_embed(page_index, page_content):
+    return hikari.Embed(title=f"All approved bookings:", description=page_content)
+
 @plugin.command
 @lightbulb.command("bookings", "View approved bookings")
-@lightbulb.implements(lightbulb.SlashSubCommand)
+@lightbulb.implements(lightbulb.SlashCommand)
 async def bookings(ctx):
-    pass
+    await set_profile(ctx.author.id)
+    users = await get_users_data()
+
+    inbox = pag.EmbedPaginator()
+    inbox.set_embed_factory(build_embed)
+    if len(users[str(ctx.author.id)]["bookings"].keys()): #if they have bookings
+        for keys, values in users[str(ctx.author.id)]["bookings"].items():
+            inbox.add_line(f"<@{keys}> : {values[0]} | Reason : {values[1]}")
+            inbox.add_line("")
+        navigator = nav.ButtonNavigator(inbox.build_pages())
+        await navigator.run(ctx)
+    else: await ctx.respond("**You have no confirmed bookings, view inbox to see booking requests.**")
 
 @plugin.command
 @lightbulb.command("calander", "View booked appointments this week")
