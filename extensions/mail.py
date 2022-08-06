@@ -20,11 +20,11 @@ def build_embed(page_index, page_content):
 async def mail(ctx):
     await set_profile(ctx.author.id)
     users = await get_users_data()
-    #Check if the username id exists in the users JSON
+    #Check if the username id they mentioned exists in the users JSON
     if str(ctx.options.username.id) in users:
         #Check if the user has already been messaged by them
         if str(ctx.author.id) in users[str(ctx.options.username.id)]["messages"]: 
-            users[str(ctx.options.username.id)]["messages"][str(ctx.author.id)].append(ctx.options.message)
+            users[str(ctx.options.username.id)]["messages"][str(ctx.author.id)].insert(0, ctx.options.message)
             with open("users.json", "w") as f:
                 json.dump(users, f, indent=2)
         else:
@@ -53,14 +53,13 @@ async def overview(ctx):
 @lightbulb.command("messages", "View of all messages you've received")
 @lightbulb.implements(lightbulb.SlashSubCommand)
 async def messages(ctx):
-    #add 2 buttons to view pages of messages and have another to view appointments
     await set_profile(ctx.author.id)
     users = await get_users_data()
 
     inbox = pag.EmbedPaginator()
     inbox.set_embed_factory(build_embed)
     if len(users[str(ctx.author.id)]["messages"].keys()): #if they have messages
-        for keys, values in users[str(ctx.author.id)]["messages"].items():
+        for keys, values in reversed(users[str(ctx.author.id)]["messages"].items()):
             for message in values: #loop in place just in case they have multiple messages from same user
                 inbox.add_line(f"<@{keys}> : {message}")
                 inbox.add_line("")
@@ -84,7 +83,7 @@ async def clear_messages(ctx):
     users[str(ctx.author.id)]["messages"].clear()
     with open("users.json", "w") as f:
         json.dump(users, f, indent=2)
-    embed = hikari.Embed(title="Inbox has been successfully cleared \✔️", description=f"Cleared {count} messages successfully.")
+    embed = hikari.Embed(title="Inbox has been successfully cleared \✔️", description=f"Cleared message(s) from {count} user(s) successfully.")
     await ctx.respond(embed)
 
 def load(bot):
