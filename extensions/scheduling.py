@@ -6,6 +6,7 @@ from difflib import get_close_matches
 from datetime import date, datetime
 from dateutil import parser #To parse
 import pytz #get the list of timezones
+import uuid
 
 plugin = lightbulb.Plugin("scheduling")
 
@@ -21,17 +22,22 @@ plugin = lightbulb.Plugin("scheduling")
 @lightbulb.implements(lightbulb.SlashCommand)
 async def book(ctx):
     await set_profile(ctx.author.id)
-    co = ctx.options
-    SelectedDate = parser.parse(f"{co.month} {co.day} {date.today().year}")
-    if datetime.today() > SelectedDate:
-        await ctx.respond("The date you've entered is in the past.") 
-    else:
-        users = await get_users_data()
-        strDate = f"{co.month} {co.day}, {co.time} {co.timezone}"
-        users[str(co.username.id)]["booking_requests"].update({ctx.author.id:[strDate, co.reason]})
-        with open("users.json", "w") as f:
-            json.dump(users, f, indent=2)
-        await ctx.respond(f"Booking request scheduled on {strDate} ")
+    users = await get_users_data()
+    if str(ctx.options.username.id) in users:
+        co = ctx.options
+        SelectedDate = parser.parse(f"{co.month} {co.day} {date.today().year}")
+        if datetime.today() > SelectedDate:
+            await ctx.respond("The date you've entered is in the past.") 
+        else:
+            ID = str(uuid.uuid4())[:8]
+            users = await get_users_data()
+            strDate = f"{co.month} {co.day}, {co.time} {co.timezone}"
+            users[str(co.username.id)]["booking_requests"].update({ID:[str(ctx.author.id), strDate, co.reason]})
+            with open("users.json", "w") as f:
+                json.dump(users, f, indent=2)
+            await ctx.respond(f"Booking request scheduled on {strDate}\nCode: {ID}")
+    else:   
+        await ctx.respond("**It appears the user you want to message doesn't have a profile setup. A profile can be setup by using bot commands.**")
 
 def build_embed(page_index, page_content):
     return hikari.Embed(title=f"All approved bookings:", description=page_content)
@@ -46,9 +52,7 @@ async def bookings(ctx):
     inbox = pag.EmbedPaginator()
     inbox.set_embed_factory(build_embed)
     if len(users[str(ctx.author.id)]["bookings"].keys()): #if they have bookings
-        for keys, values in users[str(ctx.author.id)]["bookings"].items():
-            inbox.add_line(f"<@{keys}> : {values[0]} | Reason : {values[1]}")
-            inbox.add_line("")
+        #some loop and logic
         navigator = nav.ButtonNavigator(inbox.build_pages())
         await navigator.run(ctx)
     else: await ctx.respond("**You have no confirmed bookings, view inbox to see booking requests.**")
